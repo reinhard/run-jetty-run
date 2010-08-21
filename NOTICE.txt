@@ -1,0 +1,8 @@
+Run-Jetty-Run | http://github.com/reinhard/run-jetty-run
+
+This product includes software developed by Reinhard Pötz (reinhard@apache.org).
+
+This product includes software developed at the original Run-Jetty-Run
+project (http://code.google.com/p/run-jetty-run/).
+
+This product uses software (Jetty, Eclipse IDE) developped by the Eclipse Foundation (http://www.eclipse.org).
