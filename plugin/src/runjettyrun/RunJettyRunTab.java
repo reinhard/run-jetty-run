@@ -1,19 +1,15 @@
 /*
- * $Id: RunJettyRunTab.java 39 2009-05-03 22:38:57Z james.synge@gmail.com $
- * $HeadURL: http://run-jetty-run.googlecode.com/svn/trunk/plugin/src/runjettyrun/RunJettyRunTab.java $
- * 
- * ==============================================================================
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package runjettyrun;
 
@@ -71,602 +67,574 @@ import org.eclipse.ui.dialogs.ElementListSelectionDialog;
  */
 public class RunJettyRunTab extends JavaLaunchTab {
 
-  private static abstract class ButtonListener implements SelectionListener {
+    private Text fProjText;
 
-    public void widgetDefaultSelected(SelectionEvent e) {
+    private Button fProjButton;
+    private Text fPortText;
+
+    private Text fSSLPortText;
+
+    private Text fKeystoreText;
+    private Button fKeystoreButton;
+    private Text fKeyPasswordText;
+
+    private Text fPasswordText;
+    private Text fContextText;
+
+    private Text fWebAppDirText;
+
+    private Button fWebappDirButton;
+
+    /**
+     * Construct.
+     */
+    public RunJettyRunTab() {
     }
-  }
 
-  private Text fProjText;
-  private Button fProjButton;
+    public void createControl(Composite parent) {
+        Composite comp = new Composite(parent, SWT.NONE);
+        comp.setFont(parent.getFont());
 
-  private Text fPortText;
+        GridData gd = new GridData(1);
+        gd.horizontalSpan = GridData.FILL_BOTH;
+        comp.setLayoutData(gd);
 
-  private Text fSSLPortText;
-  private Text fKeystoreText;
-  private Button fKeystoreButton;
+        GridLayout layout = new GridLayout(1, false);
+        layout.verticalSpacing = 0;
+        comp.setLayout(layout);
 
-  private Text fKeyPasswordText;
-  private Text fPasswordText;
+        this.createProjectEditor(comp);
+        this.createVerticalSpacer(comp, 1);
+        this.createPortEditor(comp);
+        this.createVerticalSpacer(comp, 1);
+        this.createJettyOptionsEditor(comp);
+        this.createVerticalSpacer(comp, 1);
+        this.setControl(comp);
+        // PlatformUI.getWorkbench().getHelpSystem().setHelp(getControl(),
+        // IJavaDebugHelpContextIds.LAUNCH_CONFIGURATION_DIALOG_MAIN_TAB);
 
-  private Text fContextText;
+        return;
+    }
 
-  private Text fWebAppDirText;
-  private Button fWebappDirButton;
+    @Override
+    public Image getImage() {
+        return Plugin.getJettyIcon();
+    }
 
-  /**
-   * Construct.
-   */
-  public RunJettyRunTab() {
-  }
+    @Override
+    public String getMessage() {
+        return "Create a configuration to launch a web application with Jetty.";
+    }
 
-  public void createControl(Composite parent) {
-    Composite comp = new Composite(parent, SWT.NONE);
-    comp.setFont(parent.getFont());
+    public String getName() {
+        return "Jetty";
+    }
 
-    GridData gd = new GridData(1);
-    gd.horizontalSpan = GridData.FILL_BOTH;
-    comp.setLayoutData(gd);
+    @Override
+    public void initializeFrom(ILaunchConfiguration configuration) {
+        super.initializeFrom(configuration);
+        try {
+            this.fProjText.setText(configuration.getAttribute(ATTR_PROJECT_NAME, ""));
 
-    GridLayout layout = new GridLayout(1, false);
-    layout.verticalSpacing = 0;
-    comp.setLayout(layout);
+            this.fPortText.setText(configuration.getAttribute(Plugin.ATTR_PORT, ""));
 
-    createProjectEditor(comp);
-    createVerticalSpacer(comp, 1);
-    createPortEditor(comp);
-    createVerticalSpacer(comp, 1);
-    createJettyOptionsEditor(comp);
-    createVerticalSpacer(comp, 1);
-    setControl(comp);
-    // PlatformUI.getWorkbench().getHelpSystem().setHelp(getControl(),
-    // IJavaDebugHelpContextIds.LAUNCH_CONFIGURATION_DIALOG_MAIN_TAB);
+            this.fSSLPortText.setText(configuration.getAttribute(Plugin.ATTR_SSL_PORT, ""));
+            this.fKeystoreText.setText(configuration.getAttribute(Plugin.ATTR_KEYSTORE, ""));
+            this.fPasswordText.setText(configuration.getAttribute(Plugin.ATTR_PWD, ""));
+            this.fKeyPasswordText.setText(configuration.getAttribute(Plugin.ATTR_KEY_PWD, ""));
 
-    return;
-  }
-
-  /**
-   * Creates the widgets for specifying a main type.
-   * 
-   * @param parent
-   *            the parent composite
-   */
-  private void createProjectEditor(Composite parent) {
-    Font font = parent.getFont();
-    Group group = new Group(parent, SWT.NONE);
-    group.setText("Project");
-    GridData gd = createHFillGridData();
-    group.setLayoutData(gd);
-    GridLayout layout = new GridLayout();
-    layout.numColumns = 2;
-    group.setLayout(layout);
-    group.setFont(font);
-    fProjText = new Text(group, SWT.SINGLE | SWT.BORDER);
-    gd = createHFillGridData();
-    fProjText.setLayoutData(gd);
-    fProjText.setFont(font);
-    fProjText.addModifyListener(new ModifyListener() {
-
-      public void modifyText(ModifyEvent e) {
-        updateLaunchConfigurationDialog();
-      }
-    });
-    fProjButton = createPushButton(group, "&Browse...", null);
-    fProjButton.addSelectionListener(new ButtonListener() {
-
-      public void widgetSelected(SelectionEvent e) {
-        handleProjectButtonSelected();
-      }
-    });
-  }
-
-  private GridData createHFillGridData() {
-    GridData gd = new GridData();
-    gd.horizontalAlignment = SWT.FILL;
-    gd.grabExcessHorizontalSpace = true;
-    return gd;
-  }
-
-  /**
-   * Creates the widgets for specifying the ports:
-   * 
-   *    HTTP Port: Text....... HTTPS Port: Text.......
-   *    Keystore: Text.................. Browse Button
-   *    Store Password:	Text.. Key Password: Text.....
-   * 
-   * @param parent
-   *            the parent composite
-   */
-  private void createPortEditor(Composite parent) {
-    // Create group, container for widgets
-    Font font = parent.getFont();
-    Group group = new Group(parent, SWT.NONE);
-    group.setText("Ports");
-    GridData gd = createHFillGridData();
-    group.setLayoutData(gd);
-    GridLayout layout = new GridLayout();
-    layout.numColumns = 4;
-    group.setLayout(layout);
-    group.setFont(font);
-
-    // HTTP and HTTPS ports
-
-    new Label(group, SWT.LEFT).setText("HTTP");
-
-    fPortText = new Text(group, SWT.SINGLE | SWT.BORDER);
-    fPortText.addModifyListener(new ModifyListener() {
-      public void modifyText(ModifyEvent e) {
-        updateLaunchConfigurationDialog();
-      }
-    });
-    gd = createHFillGridData();
-    fPortText.setLayoutData(gd);
-    fPortText.setFont(font);
-    fPortText.setTextLimit(5);
-    setWidthForSampleText(fPortText, " 65535 ");
-
-    Label lbl = new Label(group, SWT.LEFT);
-    lbl.setText("HTTPS");
-    gd = new GridData();
-    gd.horizontalAlignment = SWT.RIGHT;
-    lbl.setLayoutData(gd);
-
-    fSSLPortText = new Text(group, SWT.SINGLE | SWT.BORDER);
-    fSSLPortText.addModifyListener(new ModifyListener() {
-      public void modifyText(ModifyEvent e) {
-        if (fSSLPortText.getText().trim().length() == 0) {
-          setKeystoreEnabled(false);
+            this.fContextText.setText(configuration.getAttribute(Plugin.ATTR_CONTEXT, ""));
+            this.fWebAppDirText.setText(configuration.getAttribute(Plugin.ATTR_WEBAPPDIR, ""));
+        } catch (CoreException e) {
+            Plugin.logError(e);
         }
-        else {
-          setKeystoreEnabled(true);
+    }
+
+    @Override
+    public boolean isValid(ILaunchConfiguration config) {
+        this.setErrorMessage(null);
+        this.setMessage(null);
+
+        String projectName = this.fProjText.getText().trim();
+        IProject project = null;
+        if (projectName.length() > 0) {
+            IWorkspace workspace = ResourcesPlugin.getWorkspace();
+            IStatus status = workspace.validateName(projectName, IResource.PROJECT);
+            if (status.isOK()) {
+                project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+                if (!project.exists()) {
+                    this.setErrorMessage(MessageFormat.format("Project {0} does not exist", projectName));
+                    this.fWebappDirButton.setEnabled(false);
+                    return false;
+                }
+                if (!project.isOpen()) {
+                    this.setErrorMessage(MessageFormat.format("Project {0} is closed", projectName));
+                    this.fWebappDirButton.setEnabled(false);
+                    return false;
+                }
+            } else {
+                this.setErrorMessage(MessageFormat.format("Illegal project name: {0}", status.getMessage()));
+                this.fWebappDirButton.setEnabled(false);
+                return false;
+            }
+            this.fWebappDirButton.setEnabled(true);
+        } else {
+            this.setErrorMessage("No project selected");
+            return false;
         }
-        updateLaunchConfigurationDialog();
-      }
-    });
-    gd = createHFillGridData();
-    fSSLPortText.setLayoutData(gd);
-    fSSLPortText.setFont(font);
-
-    // keystore
-
-    new Label(group, SWT.LEFT).setText("Keystore");
-    fKeystoreText = new Text(group, SWT.SINGLE | SWT.BORDER);
-
-    fKeystoreText.addModifyListener(new ModifyListener() {
-      public void modifyText(ModifyEvent e) {
-        updateLaunchConfigurationDialog();
-      }
-    });
-    gd = createHFillGridData();
-    gd.horizontalSpan = 2;
-    fKeystoreText.setLayoutData(gd);
-    fKeystoreText.setFont(font);
-    fKeystoreText.setEnabled(false);
-
-    fKeystoreButton = createPushButton(group, "&Browse...", null);
-    fKeystoreButton.addSelectionListener(new ButtonListener() {
-      public void widgetSelected(SelectionEvent e) {
-        handleBrowseFileSystem();
-      }
-    });
-    fKeystoreButton.setEnabled(false);
-    gd = new GridData();
-    fKeystoreButton.setLayoutData(gd);
-
-    // Password and Key Password (not sure exactly how used by keystore)
-
-    new Label(group, SWT.LEFT).setText("Password");
-    fPasswordText = new Text(group, SWT.SINGLE | SWT.BORDER);
-    fPasswordText.addModifyListener(new ModifyListener() {
-      public void modifyText(ModifyEvent e) {
-        updateLaunchConfigurationDialog();
-      }
-    });
-    gd = createHFillGridData();
-    fPasswordText.setLayoutData(gd);
-    fPasswordText.setFont(font);
-    fPasswordText.setEnabled(false);
-
-    new Label(group, SWT.LEFT).setText("Key Password");
-    fKeyPasswordText = new Text(group, SWT.SINGLE | SWT.BORDER);
-    fKeyPasswordText.addModifyListener(new ModifyListener() {
-      public void modifyText(ModifyEvent e) {
-        updateLaunchConfigurationDialog();
-      }
-    });
-    gd = createHFillGridData();
-    fKeyPasswordText.setLayoutData(gd);
-    fKeyPasswordText.setFont(font);
-    fKeyPasswordText.setEnabled(false);
-
-    return;
-  }
-
-  private void setWidthForSampleText(Text control, String sampleText)
-  {
-    GC gc = new GC (control);
-    try {
-      Point sampleSize = gc.textExtent (sampleText);
-      Point currentSize = control.getSize();
-      sampleSize.y = currentSize.y;
-      control.setSize(sampleSize);
-      return;
-    }
-    finally {
-      gc.dispose ();
-    }
-  }
-
-  /**
-   * Creates the widgets for specifying the directory, context and port for
-   * the web application.
-   * 
-   * @param parent
-   *            the parent composite
-   */
-  private void createJettyOptionsEditor(Composite parent) {
-    Font font = parent.getFont();
-    Group group = new Group(parent, SWT.NONE);
-    group.setText("Web Application");
-    GridData gd = createHFillGridData();
-    group.setLayoutData(gd);
-    GridLayout layout = new GridLayout();
-    layout.numColumns = 3;
-    group.setLayout(layout);
-    group.setFont(font);
-
-    // Row 1: "Context", Text field (2 columns)
-    new Label(group, SWT.LEFT).setText("Context");
-
-    fContextText = new Text(group, SWT.SINGLE | SWT.BORDER);
-    fContextText.addModifyListener(new ModifyListener() {
-      public void modifyText(ModifyEvent e) {
-        updateLaunchConfigurationDialog();
-      }
-    });
-    gd = createHFillGridData();
-    gd.horizontalSpan = 2;
-    fContextText.setLayoutData(gd);
-    fContextText.setFont(font);
-
-    // Row 2: "WebApp dir", Text field, "Browse..." Button
-    new Label(group, SWT.LEFT).setText("WebApp dir");
-    fWebAppDirText = new Text(group, SWT.SINGLE | SWT.BORDER);
-    fWebAppDirText.addModifyListener(new ModifyListener() {
-      public void modifyText(ModifyEvent e) {
-        updateLaunchConfigurationDialog();
-      }
-    });
-    gd = createHFillGridData();
-    fWebAppDirText.setLayoutData(gd);
-    fWebAppDirText.setFont(font);
-
-    fWebappDirButton = createPushButton(group, "&Browse...", null);
-    fWebappDirButton.addSelectionListener(new ButtonListener() {
-      public void widgetSelected(SelectionEvent e) {
-        chooseWebappDir();
-      }
-    });
-    fWebappDirButton.setEnabled(false);
-    gd = new GridData();
-    fWebappDirButton.setLayoutData(gd);
-
-    return;
-  }
-
-  @Override
-  public Image getImage() {
-    return Plugin.getJettyIcon();
-  }
-
-  @Override
-  public String getMessage() {
-    return "Create a configuration to launch a web application with Jetty.";
-  }
-
-  public String getName() {
-    return "Jetty";
-  }
-
-  protected void setKeystoreEnabled(boolean b) {
-    fKeystoreText.setEnabled(b);
-    fKeystoreButton.setEnabled(b);
-    fPasswordText.setEnabled(b);
-    fKeyPasswordText.setEnabled(b);
-
-    return;
-  }
-
-  public void initializeFrom(ILaunchConfiguration configuration) {
-    super.initializeFrom(configuration);
-    try {
-      fProjText.setText(configuration.getAttribute(ATTR_PROJECT_NAME, ""));
-
-      fPortText.setText(configuration.getAttribute(Plugin.ATTR_PORT, ""));
-
-      fSSLPortText.setText(configuration.getAttribute(Plugin.ATTR_SSL_PORT, ""));
-      fKeystoreText.setText(configuration.getAttribute(Plugin.ATTR_KEYSTORE, ""));
-      fPasswordText.setText(configuration.getAttribute(Plugin.ATTR_PWD, ""));
-      fKeyPasswordText.setText(configuration.getAttribute(Plugin.ATTR_KEY_PWD, ""));
-
-      fContextText.setText(configuration.getAttribute(Plugin.ATTR_CONTEXT, ""));
-      fWebAppDirText.setText(configuration.getAttribute(Plugin.ATTR_WEBAPPDIR, ""));
-    } catch (CoreException e) {
-      Plugin.logError(e);
-    }
-  }
-
-  public boolean isValid(ILaunchConfiguration config) {
-    setErrorMessage(null);
-    setMessage(null);
-
-    String projectName = fProjText.getText().trim();
-    IProject project = null;
-    if (projectName.length() > 0) {
-      IWorkspace workspace = ResourcesPlugin.getWorkspace();
-      IStatus status = workspace.validateName(projectName,
-          IResource.PROJECT);
-      if (status.isOK()) {
-        project = ResourcesPlugin.getWorkspace().getRoot().getProject(
-            projectName);
-        if (!project.exists()) {
-          setErrorMessage(MessageFormat.format(
-              "Project {0} does not exist", projectName));
-          fWebappDirButton.setEnabled(false);
-          return false;
+        String directory = this.fWebAppDirText.getText().trim();
+        if (!"".equals(directory.trim())) {
+            IFolder folder = project.getFolder(directory);
+            if (!folder.exists()) {
+                this.setErrorMessage(MessageFormat.format("Folder {0} does not exist in project {1}", directory, project.getName()));
+                return false;
+            }
+            IFile file = project.getFile(new Path(directory + "/WEB-INF/web.xml"));
+            if (!file.exists()) {
+                this.setErrorMessage(MessageFormat.format(
+                        "Directory {0} does not contain WEB-INF/web.xml; it is not a valid web application directory", directory));
+                return false;
+            }
+        } else {
+            this.setErrorMessage("Web application directory is not set");
+            return false;
         }
-        if (!project.isOpen()) {
-          setErrorMessage(MessageFormat.format(
-              "Project {0} is closed", projectName));
-          fWebappDirButton.setEnabled(false);
-          return false;
+
+        String port = this.fPortText.getText().trim();
+        String sslPort = this.fSSLPortText.getText().trim();
+        if (port.length() == 0 && sslPort.length() == 0) {
+            this.setErrorMessage("Must specify at least one port");
+            return false;
         }
-      } else {
-        setErrorMessage(MessageFormat.format(
-            "Illegal project name: {0}", status.getMessage()));
-        fWebappDirButton.setEnabled(false);
-        return false;
-      }
-      fWebappDirButton.setEnabled(true);
-    } else {
-      setErrorMessage("No project selected");
-      return false;
-    }
-    String directory = fWebAppDirText.getText().trim();
-    if (!"".equals(directory.trim())) {
-      IFolder folder = project.getFolder(directory);
-      if (!folder.exists()) {
-        setErrorMessage(MessageFormat.format(
-            "Folder {0} does not exist in project {1}", directory,
-            project.getName()));
-        return false;
-      }
-      IFile file = project.getFile(new Path(directory
-          + "/WEB-INF/web.xml"));
-      if (!file.exists()) {
-        setErrorMessage(MessageFormat
-            .format(
-                "Directory {0} does not contain WEB-INF/web.xml; it is not a valid web application directory",
-                directory));
-        return false;
-      }
-    } else {
-      setErrorMessage("Web application directory is not set");
-      return false;
+        if (this.isInvalidPort(port)) {
+            return false;
+        }
+        if (this.isInvalidPort(sslPort)) {
+            return false;
+        }
+
+        if (sslPort.length() > 0) {
+            // Validate that we have the necessary key store info.
+            String keystore = this.fKeystoreText.getText().trim();
+            String keyPwd = this.fKeyPasswordText.getText().trim();
+            String password = this.fPasswordText.getText().trim();
+            if (keystore.length() == 0) {
+                this.setErrorMessage("Keystore location is not set");
+                return false;
+            } else if (!new File(keystore).isFile()) {
+                this.setErrorMessage(MessageFormat.format("Keystore file {0} does not exist", keystore));
+                return false;
+            }
+            if (keyPwd.length() == 0) {
+                this.setErrorMessage("Key Password is not set");
+                return false;
+            }
+            if (password.length() == 0) {
+                this.setErrorMessage("Password is not set");
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    String port = fPortText.getText().trim();
-    String sslPort = fSSLPortText.getText().trim();
-    if (port.length() == 0 && sslPort.length() == 0)
-    {
-      setErrorMessage("Must specify at least one port");
-      return false;
-    }
-    if (isInvalidPort(port))
-      return false;
-    if (isInvalidPort(sslPort))
-      return false;
+    public void performApply(ILaunchConfigurationWorkingCopy configuration) {
+        configuration.setAttribute(ATTR_PROJECT_NAME, this.fProjText.getText());
 
-    if (sslPort.length() > 0)
-    {
-      // Validate that we have the necessary key store info.
-      String keystore = fKeystoreText.getText().trim();
-      String keyPwd = fKeyPasswordText.getText().trim();
-      String password = fPasswordText.getText().trim();
-      if (keystore.length() == 0)
-      {
-        setErrorMessage("Keystore location is not set");
-        return false;
-      }
-      else if (!new File(keystore).isFile())
-      {
-        setErrorMessage(MessageFormat
-            .format(
-                "Keystore file {0} does not exist",
-                keystore));
-        return false;
-      }
-      if (keyPwd.length() == 0)
-      {
-        setErrorMessage("Key Password is not set");
-        return false;
-      }
-      if (password.length() == 0)
-      {
-        setErrorMessage("Password is not set");
-        return false;
-      }
+        configuration.setAttribute(Plugin.ATTR_PORT, this.fPortText.getText());
+
+        configuration.setAttribute(Plugin.ATTR_SSL_PORT, this.fSSLPortText.getText());
+        configuration.setAttribute(Plugin.ATTR_KEYSTORE, this.fKeystoreText.getText());
+        configuration.setAttribute(Plugin.ATTR_PWD, this.fPasswordText.getText());
+        configuration.setAttribute(Plugin.ATTR_KEY_PWD, this.fKeyPasswordText.getText());
+
+        configuration.setAttribute(Plugin.ATTR_CONTEXT, this.fContextText.getText());
+        configuration.setAttribute(Plugin.ATTR_WEBAPPDIR, this.fWebAppDirText.getText());
+
+        return;
     }
 
-    return true;
-  }
+    public void setDefaults(ILaunchConfigurationWorkingCopy configuration) {
 
-  private boolean isInvalidPort(String s)
-  {
-    if (s.length() == 0)
-      return false;
-    try {
-      int p = Integer.parseInt(s);
-      if (1 <= p && p <= 65535)
-        return false;
-    }
-    catch (NumberFormatException e) {
-    }
-    setErrorMessage(MessageFormat.format("Not a valid TCP port number: {0}", s));
-    return true;
-  }
+        IJavaElement javaElement = this.getContext();
+        if (javaElement != null) {
+            this.initializeJavaProject(javaElement, configuration);
+        } else {
+            configuration.setAttribute(ATTR_PROJECT_NAME, "");
+        }
 
-  public void performApply(ILaunchConfigurationWorkingCopy configuration) {
-    configuration.setAttribute(ATTR_PROJECT_NAME, fProjText.getText());
+        configuration.setAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME, Plugin.BOOTSTRAP_CLASS_NAME);
 
-    configuration.setAttribute(Plugin.ATTR_PORT, fPortText.getText());
+        // set the class path provider so that Jetty and the bootstrap jar are
+        // added to the run time class path. Value has to be the same as the one
+        // defined for the extension point
+        configuration.setAttribute(IJavaLaunchConfigurationConstants.ATTR_CLASSPATH_PROVIDER, "RunJettyRunWebAppClassPathProvider");
 
-    configuration.setAttribute(Plugin.ATTR_SSL_PORT, fSSLPortText.getText());
-    configuration.setAttribute(Plugin.ATTR_KEYSTORE, fKeystoreText.getText());
-    configuration.setAttribute(Plugin.ATTR_PWD, fPasswordText.getText());
-    configuration.setAttribute(Plugin.ATTR_KEY_PWD, fKeyPasswordText.getText());
+        // get the name for this launch configuration
+        String launchConfigName = "";
+        try {
+            // try to base the launch config name on the current project
+            launchConfigName = configuration.getAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, "");
+        } catch (CoreException e) {
+            // ignore
+        }
+        if (launchConfigName == null || launchConfigName.length() == 0) {
+            // if no project name was found, base on a default name
+            launchConfigName = "Jetty Webapp";
+        }
+        // generate an unique name (e.g. myproject(2))
+        launchConfigName = this.getLaunchConfigurationDialog().generateName(launchConfigName);
+        configuration.rename(launchConfigName); // and rename the config
 
-    configuration.setAttribute(Plugin.ATTR_CONTEXT, fContextText.getText());
-    configuration.setAttribute(Plugin.ATTR_WEBAPPDIR, fWebAppDirText.getText());
+        configuration.setAttribute(Plugin.ATTR_PORT, "8080");
+        configuration.setAttribute(Plugin.ATTR_SSL_PORT, "8443");
 
-    return;
-  }
+        File userHomeDir = new File(System.getProperty("user.home"));
+        File keystoreFile = new File(userHomeDir, ".keystore");
+        String keystore = keystoreFile.getAbsolutePath();
 
-  public void setDefaults(ILaunchConfigurationWorkingCopy configuration) {
+        configuration.setAttribute(Plugin.ATTR_KEYSTORE, keystore);
+        configuration.setAttribute(Plugin.ATTR_PWD, "changeit");
+        configuration.setAttribute(Plugin.ATTR_KEY_PWD, "changeit");
 
-    IJavaElement javaElement = getContext();
-    if (javaElement != null) {
-      initializeJavaProject(javaElement, configuration);
-    } else {
-      configuration.setAttribute(ATTR_PROJECT_NAME, "");
-    }
+        configuration.setAttribute(Plugin.ATTR_CONTEXT, "/");
+        configuration.setAttribute(Plugin.ATTR_WEBAPPDIR, "");
 
-    configuration.setAttribute(
-        IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME,
-        Plugin.BOOTSTRAP_CLASS_NAME);
-
-    // set the class path provider so that Jetty and the bootstrap jar are
-    // added to the run time class path. Value has to be the same as the one
-    // defined for the extension point
-    configuration.setAttribute(
-        IJavaLaunchConfigurationConstants.ATTR_CLASSPATH_PROVIDER,
-    "RunJettyRunWebAppClassPathProvider");
-
-    // get the name for this launch configuration
-    String launchConfigName = "";
-    try {
-      // try to base the launch config name on the current project
-      launchConfigName = configuration.getAttribute(
-          IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, "");
-    } catch (CoreException e) {
-      // ignore
-    }
-    if (launchConfigName == null || launchConfigName.length() == 0) {
-      // if no project name was found, base on a default name
-      launchConfigName = "Jetty Webapp";
-    }
-    // generate an unique name (e.g. myproject(2))
-    launchConfigName = getLaunchConfigurationDialog().generateName(
-        launchConfigName);
-    configuration.rename(launchConfigName); // and rename the config
-
-    configuration.setAttribute(Plugin.ATTR_PORT, "8080");
-    configuration.setAttribute(Plugin.ATTR_SSL_PORT, "8443");
-
-    File userHomeDir = new File(System.getProperty("user.home"));
-    File keystoreFile = new File(userHomeDir, ".keystore");
-    String keystore = keystoreFile.getAbsolutePath();
-
-    configuration.setAttribute(Plugin.ATTR_KEYSTORE, keystore );
-    configuration.setAttribute(Plugin.ATTR_PWD, "changeit");
-    configuration.setAttribute(Plugin.ATTR_KEY_PWD, "changeit");
-
-    configuration.setAttribute(Plugin.ATTR_CONTEXT, "/");
-    configuration.setAttribute(Plugin.ATTR_WEBAPPDIR, "");
-
-    return;
-  }
-
-  private IJavaProject chooseJavaProject() {
-    ILabelProvider labelProvider = new JavaElementLabelProvider(
-        JavaElementLabelProvider.SHOW_DEFAULT);
-    ElementListSelectionDialog dialog = new ElementListSelectionDialog(
-        getShell(), labelProvider);
-    dialog.setTitle("Project Selection");
-    dialog.setMessage("Select a project to constrain your search.");
-    try {
-      dialog
-      .setElements(JavaCore.create(
-          ResourcesPlugin.getWorkspace().getRoot())
-          .getJavaProjects());
-    } catch (JavaModelException jme) {
-      Plugin.logError(jme);
+        return;
     }
 
-    IJavaProject javaProject = null;
-    String projectName = fProjText.getText().trim();
-    if (projectName.length() > 0) {
-      javaProject = JavaCore.create(getWorkspaceRoot()).getJavaProject(
-          projectName);
+    protected void handleBrowseFileSystem() {
+        String current = this.fKeystoreText.getText();
+        if (current == null || current.trim().equals("")) {
+            String userHome = System.getProperty("user.home");
+            String fileSeparator = System.getProperty("file.separator");
+            current = userHome + fileSeparator + ".keystore";
+        }
+        FileDialog dialog = new FileDialog(this.getControl().getShell());
+        dialog.setFilterExtensions(new String[] {"*.keystore", "*"}); //$NON-NLS-1$
+        dialog.setFilterPath(this.fKeystoreText.getText());
+        dialog.setText("Choose a keystore file");
+        String res = dialog.open();
+        if (res != null) {
+            this.fKeystoreText.setText(res);
+        }
     }
-    if (javaProject != null) {
-      dialog.setInitialSelections(new Object[] { javaProject });
-    }
-    if (dialog.open() == Window.OK) {
-      return (IJavaProject) dialog.getFirstResult();
-    }
-    return null;
-  }
 
-  private void chooseWebappDir() {
-    IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(
-        fProjText.getText());
-    ContainerSelectionDialog dialog = new ContainerSelectionDialog(
-        getShell(), project, false, "Select Web Application Directory");
-    dialog.setTitle("Folder Selection");
-    if (project != null) {
-      IPath path = project.getFullPath();
-      dialog.setInitialSelections(new Object[] { path });
-    }
-    dialog.showClosedProjects(false);
-    dialog.open();
-    Object[] results = dialog.getResult();
-    if ((results != null) && (results.length > 0)
-        && (results[0] instanceof IPath)) {
-      IPath path = (IPath) results[0];
-      path = path.removeFirstSegments(1);
-      String containerName = path.makeRelative().toString();
-      fWebAppDirText.setText(containerName);
-    }
-  }
+    protected void setKeystoreEnabled(boolean b) {
+        this.fKeystoreText.setEnabled(b);
+        this.fKeystoreButton.setEnabled(b);
+        this.fPasswordText.setEnabled(b);
+        this.fKeyPasswordText.setEnabled(b);
 
-  private IWorkspaceRoot getWorkspaceRoot() {
-    return ResourcesPlugin.getWorkspace().getRoot();
-  }
-
-  private void handleProjectButtonSelected() {
-    IJavaProject project = chooseJavaProject();
-    if (project == null) {
-      return;
+        return;
     }
-    String projectName = project.getElementName();
-    fProjText.setText(projectName);
-  }
 
-  protected void handleBrowseFileSystem() {
-    String current = fKeystoreText.getText();
-    if (current == null || current.trim().equals(""))
-    {
-      String userHome = System.getProperty("user.home");
-      String fileSeparator = System.getProperty("file.separator");
-      current = userHome + fileSeparator + ".keystore";
+    private IJavaProject chooseJavaProject() {
+        ILabelProvider labelProvider = new JavaElementLabelProvider(JavaElementLabelProvider.SHOW_DEFAULT);
+        ElementListSelectionDialog dialog = new ElementListSelectionDialog(this.getShell(), labelProvider);
+        dialog.setTitle("Project Selection");
+        dialog.setMessage("Select a project to constrain your search.");
+        try {
+            dialog.setElements(JavaCore.create(ResourcesPlugin.getWorkspace().getRoot()).getJavaProjects());
+        } catch (JavaModelException jme) {
+            Plugin.logError(jme);
+        }
+
+        IJavaProject javaProject = null;
+        String projectName = this.fProjText.getText().trim();
+        if (projectName.length() > 0) {
+            javaProject = JavaCore.create(this.getWorkspaceRoot()).getJavaProject(projectName);
+        }
+        if (javaProject != null) {
+            dialog.setInitialSelections(new Object[] {javaProject});
+        }
+        if (dialog.open() == Window.OK) {
+            return (IJavaProject) dialog.getFirstResult();
+        }
+        return null;
     }
-    FileDialog dialog = new FileDialog(getControl().getShell());
-    dialog.setFilterExtensions(new String[] {"*.keystore", "*"}); //$NON-NLS-1$
-    dialog.setFilterPath(fKeystoreText.getText());
-    dialog.setText("Choose a keystore file");
-    String res = dialog.open();
-    if (res != null)
-      fKeystoreText.setText(res);
-  }
+
+    private void chooseWebappDir() {
+        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(this.fProjText.getText());
+        ContainerSelectionDialog dialog = new ContainerSelectionDialog(this.getShell(), project, false,
+        "Select Web Application Directory");
+        dialog.setTitle("Folder Selection");
+        if (project != null) {
+            IPath path = project.getFullPath();
+            dialog.setInitialSelections(new Object[] {path});
+        }
+        dialog.showClosedProjects(false);
+        dialog.open();
+        Object[] results = dialog.getResult();
+        if ((results != null) && (results.length > 0) && (results[0] instanceof IPath)) {
+            IPath path = (IPath) results[0];
+            path = path.removeFirstSegments(1);
+            String containerName = path.makeRelative().toString();
+            this.fWebAppDirText.setText(containerName);
+        }
+    }
+
+    private GridData createHFillGridData() {
+        GridData gd = new GridData();
+        gd.horizontalAlignment = SWT.FILL;
+        gd.grabExcessHorizontalSpace = true;
+        return gd;
+    }
+
+    /**
+     * Creates the widgets for specifying the directory, context and port for the web application.
+     * 
+     * @param parent the parent composite
+     */
+    private void createJettyOptionsEditor(Composite parent) {
+        Font font = parent.getFont();
+        Group group = new Group(parent, SWT.NONE);
+        group.setText("Web Application");
+        GridData gd = this.createHFillGridData();
+        group.setLayoutData(gd);
+        GridLayout layout = new GridLayout();
+        layout.numColumns = 3;
+        group.setLayout(layout);
+        group.setFont(font);
+
+        // Row 1: "Context", Text field (2 columns)
+        new Label(group, SWT.LEFT).setText("Context");
+
+        this.fContextText = new Text(group, SWT.SINGLE | SWT.BORDER);
+        this.fContextText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        gd = this.createHFillGridData();
+        gd.horizontalSpan = 2;
+        this.fContextText.setLayoutData(gd);
+        this.fContextText.setFont(font);
+
+        // Row 2: "WebApp dir", Text field, "Browse..." Button
+        new Label(group, SWT.LEFT).setText("WebApp dir");
+        this.fWebAppDirText = new Text(group, SWT.SINGLE | SWT.BORDER);
+        this.fWebAppDirText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        gd = this.createHFillGridData();
+        this.fWebAppDirText.setLayoutData(gd);
+        this.fWebAppDirText.setFont(font);
+
+        this.fWebappDirButton = this.createPushButton(group, "&Browse...", null);
+        this.fWebappDirButton.addSelectionListener(new ButtonListener() {
+
+            public void widgetSelected(SelectionEvent e) {
+                RunJettyRunTab.this.chooseWebappDir();
+            }
+        });
+        this.fWebappDirButton.setEnabled(false);
+        gd = new GridData();
+        this.fWebappDirButton.setLayoutData(gd);
+
+        return;
+    }
+
+    /**
+     * Creates the widgets for specifying the ports:
+     * 
+     * HTTP Port: Text....... HTTPS Port: Text....... Keystore: Text.................. Browse Button Store Password:
+     * Text.. Key Password: Text.....
+     * 
+     * @param parent the parent composite
+     */
+    private void createPortEditor(Composite parent) {
+        // Create group, container for widgets
+        Font font = parent.getFont();
+        Group group = new Group(parent, SWT.NONE);
+        group.setText("Ports");
+        GridData gd = this.createHFillGridData();
+        group.setLayoutData(gd);
+        GridLayout layout = new GridLayout();
+        layout.numColumns = 4;
+        group.setLayout(layout);
+        group.setFont(font);
+
+        // HTTP and HTTPS ports
+
+        new Label(group, SWT.LEFT).setText("HTTP");
+
+        this.fPortText = new Text(group, SWT.SINGLE | SWT.BORDER);
+        this.fPortText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        gd = this.createHFillGridData();
+        this.fPortText.setLayoutData(gd);
+        this.fPortText.setFont(font);
+        this.fPortText.setTextLimit(5);
+        this.setWidthForSampleText(this.fPortText, " 65535 ");
+
+        Label lbl = new Label(group, SWT.LEFT);
+        lbl.setText("HTTPS");
+        gd = new GridData();
+        gd.horizontalAlignment = SWT.RIGHT;
+        lbl.setLayoutData(gd);
+
+        this.fSSLPortText = new Text(group, SWT.SINGLE | SWT.BORDER);
+        this.fSSLPortText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                if (RunJettyRunTab.this.fSSLPortText.getText().trim().length() == 0) {
+                    RunJettyRunTab.this.setKeystoreEnabled(false);
+                } else {
+                    RunJettyRunTab.this.setKeystoreEnabled(true);
+                }
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        gd = this.createHFillGridData();
+        this.fSSLPortText.setLayoutData(gd);
+        this.fSSLPortText.setFont(font);
+
+        // keystore
+
+        new Label(group, SWT.LEFT).setText("Keystore");
+        this.fKeystoreText = new Text(group, SWT.SINGLE | SWT.BORDER);
+
+        this.fKeystoreText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        gd = this.createHFillGridData();
+        gd.horizontalSpan = 2;
+        this.fKeystoreText.setLayoutData(gd);
+        this.fKeystoreText.setFont(font);
+        this.fKeystoreText.setEnabled(false);
+
+        this.fKeystoreButton = this.createPushButton(group, "&Browse...", null);
+        this.fKeystoreButton.addSelectionListener(new ButtonListener() {
+
+            public void widgetSelected(SelectionEvent e) {
+                RunJettyRunTab.this.handleBrowseFileSystem();
+            }
+        });
+        this.fKeystoreButton.setEnabled(false);
+        gd = new GridData();
+        this.fKeystoreButton.setLayoutData(gd);
+
+        // Password and Key Password (not sure exactly how used by keystore)
+
+        new Label(group, SWT.LEFT).setText("Password");
+        this.fPasswordText = new Text(group, SWT.SINGLE | SWT.BORDER);
+        this.fPasswordText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        gd = this.createHFillGridData();
+        this.fPasswordText.setLayoutData(gd);
+        this.fPasswordText.setFont(font);
+        this.fPasswordText.setEnabled(false);
+
+        new Label(group, SWT.LEFT).setText("Key Password");
+        this.fKeyPasswordText = new Text(group, SWT.SINGLE | SWT.BORDER);
+        this.fKeyPasswordText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        gd = this.createHFillGridData();
+        this.fKeyPasswordText.setLayoutData(gd);
+        this.fKeyPasswordText.setFont(font);
+        this.fKeyPasswordText.setEnabled(false);
+
+        return;
+    }
+
+    /**
+     * Creates the widgets for specifying a main type.
+     * 
+     * @param parent the parent composite
+     */
+    private void createProjectEditor(Composite parent) {
+        Font font = parent.getFont();
+        Group group = new Group(parent, SWT.NONE);
+        group.setText("Project");
+        GridData gd = this.createHFillGridData();
+        group.setLayoutData(gd);
+        GridLayout layout = new GridLayout();
+        layout.numColumns = 2;
+        group.setLayout(layout);
+        group.setFont(font);
+        this.fProjText = new Text(group, SWT.SINGLE | SWT.BORDER);
+        gd = this.createHFillGridData();
+        this.fProjText.setLayoutData(gd);
+        this.fProjText.setFont(font);
+        this.fProjText.addModifyListener(new ModifyListener() {
+
+            public void modifyText(ModifyEvent e) {
+                RunJettyRunTab.this.updateLaunchConfigurationDialog();
+            }
+        });
+        this.fProjButton = this.createPushButton(group, "&Browse...", null);
+        this.fProjButton.addSelectionListener(new ButtonListener() {
+
+            public void widgetSelected(SelectionEvent e) {
+                RunJettyRunTab.this.handleProjectButtonSelected();
+            }
+        });
+    }
+
+    private IWorkspaceRoot getWorkspaceRoot() {
+        return ResourcesPlugin.getWorkspace().getRoot();
+    }
+
+    private void handleProjectButtonSelected() {
+        IJavaProject project = this.chooseJavaProject();
+        if (project == null) {
+            return;
+        }
+        String projectName = project.getElementName();
+        this.fProjText.setText(projectName);
+    }
+
+    private boolean isInvalidPort(String s) {
+        if (s.length() == 0) {
+            return false;
+        }
+        try {
+            int p = Integer.parseInt(s);
+            if (1 <= p && p <= 65535) {
+                return false;
+            }
+        } catch (NumberFormatException e) {
+        }
+        this.setErrorMessage(MessageFormat.format("Not a valid TCP port number: {0}", s));
+        return true;
+    }
+
+    private void setWidthForSampleText(Text control, String sampleText) {
+        GC gc = new GC(control);
+        try {
+            Point sampleSize = gc.textExtent(sampleText);
+            Point currentSize = control.getSize();
+            sampleSize.y = currentSize.y;
+            control.setSize(sampleSize);
+            return;
+        } finally {
+            gc.dispose();
+        }
+    }
+
+    private static abstract class ButtonListener implements SelectionListener {
+
+        public void widgetDefaultSelected(SelectionEvent e) {
+        }
+    }
 }
