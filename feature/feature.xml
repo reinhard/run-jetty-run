@@ -16,9 +16,9 @@
       id="runjettyrun_feature"
       label="Run Jetty Run Feature"
       version="1.1.2"
-      provider-name="http://code.google.com/p/run-jetty-run/">
+      provider-name="http://reinhard.github.com/run-jetty-run/">
 
-   <description url="http://code.google.com/p/run-jetty-run/">
+   <description url="http://reinhard.github.com/run-jetty-run/">
       Run web applications in Eclipse using the Jetty distribution (Jetty 6.1.25)
       embedded in this plug-in.
    </description>
@@ -26,6 +26,7 @@
    <copyright>
       Copyright 2007 Eelco Hillenius
       Copyright 2009 James Synge
+      copyright 2010 Reinhard Pötz
    </copyright>
 
    <license url="http://www.apache.org/licenses/LICENSE-2.0">
@@ -41,7 +42,7 @@ permissions and limitations under the License.
    </license>
 
    <url>
-      <update label="run-jetty-run update site" url="http://run-jetty-run.googlecode.com/svn/trunk/updatesite/"/>
+      <update label="run-jetty-run update site" url="http://reinhard.github.com/run-jetty-run/updatesite/"/>
    </url>
 
    <requires>

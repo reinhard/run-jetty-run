@@ -230,6 +230,7 @@
 		   metadataRepository="${p2.build.repo}"
 		   artifactRepository="${p2.build.repo}"
 		   buildResultFolder="${build.result.folder}"
+		   unpack="false"
 		   baseDirectory="${basedir}"
 		/>
 	</target>
